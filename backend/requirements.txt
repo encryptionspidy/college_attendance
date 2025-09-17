@@ -1,0 +1,10 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+# Bump SQLAlchemy to a Python 3.13-compatible release
+sqlalchemy==2.0.36
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
+# Upgrade pydantic to ensure wheels exist for Python 3.13 and avoid building pydantic-core from source
+pydantic==2.9.2
+python-multipart==0.0.6

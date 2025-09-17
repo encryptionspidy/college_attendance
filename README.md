@@ -1,112 +1,143 @@
-# Flutter
+# College Attendance Marker
 
-A modern Flutter-based mobile application utilizing the latest mobile development technologies and tools for building responsive cross-platform applications.
+A comprehensive Flutter mobile application for managing college attendance with role-based access control.
 
-## 📋 Prerequisites
+## Features
 
-- Flutter SDK (^3.29.2)
-- Dart SDK
-- Android Studio / VS Code with Flutter extensions
-- Android SDK / Xcode (for iOS development)
+### 🎯 Multi-Role System
+- **Students**: Submit leave requests, view attendance history
+- **Attendance Incharge**: Mark daily attendance, manage special days  
+- **Advisors**: Approve leave requests, view attendance reports
+- **Admins**: Full system access, user management, comprehensive reports
 
-## 🛠️ Installation
+### 📱 Core Functionality
+- **Attendance Marking**: Easy daily attendance tracking with bulk operations
+- **Leave Management**: Digital leave request submission and approval workflow
+- **Special Days**: Mark holidays, weekends, and custom events
+- **Offline Support**: Works without internet, syncs when connected
+- **Digital Signatures**: Advisor approval with signature validation
 
-1. Install dependencies:
-```bash
-flutter pub get
-```
-
-2. Run the application:
-```bash
-flutter run
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-flutter_app/
-├── android/            # Android-specific configuration
-├── ios/                # iOS-specific configuration
-├── lib/
-│   ├── core/           # Core utilities and services
-│   │   └── utils/      # Utility classes
-│   ├── presentation/   # UI screens and widgets
-│   │   └── splash_screen/ # Splash screen implementation
-│   ├── routes/         # Application routing
-│   ├── theme/          # Theme configuration
-│   ├── widgets/        # Reusable UI components
-│   └── main.dart       # Application entry point
-├── assets/             # Static assets (images, fonts, etc.)
-├── pubspec.yaml        # Project dependencies and configuration
-└── README.md           # Project documentation
+college_attendance_marker/
+├── backend/                 # FastAPI Python backend
+│   ├── routes/             # API route handlers
+│   ├── models.py           # Database models
+│   ├── auth.py             # Authentication logic
+│   └── main.py             # FastAPI application entry point
+├── frontend/               # Flutter mobile application
+│   ├── lib/
+│   │   ├── src/
+│   │   │   ├── features/   # Feature-based modules
+│   │   │   ├── core/       # Core services and utilities
+│   │   │   ├── models/     # Data models
+│   │   │   └── providers/  # State management
+│   │   └── main.dart       # Flutter app entry point
+│   └── android/            # Android build configuration
+└── README.md              # This file
 ```
 
-## 🧩 Adding Routes
+## Setup Instructions
 
-To add new routes to the application, update the `lib/routes/app_routes.dart` file:
+### Backend Setup
 
-```dart
-import 'package:flutter/material.dart';
-import 'package:package_name/presentation/home_screen/home_screen.dart';
+1. **Navigate to backend directory:**
+   ```bash
+   cd backend
+   ```
 
-class AppRoutes {
-  static const String initial = '/';
-  static const String home = '/home';
+2. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-  static Map<String, WidgetBuilder> routes = {
-    initial: (context) => const SplashScreen(),
-    home: (context) => const HomeScreen(),
-    // Add more routes as needed
-  }
+3. **Initialize database:**
+   ```bash
+   python init_db.py
+   ```
+
+4. **Start the server:**
+   ```bash
+   python run_server.py
+   ```
+
+### Frontend Setup
+
+1. **Navigate to frontend directory:**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install Flutter dependencies:**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Update API configuration:**
+   - Edit `env.json` to set correct backend URL
+   
+4. **Run the application:**
+   ```bash
+   flutter run
+   ```
+
+## API Configuration
+
+The app connects to the backend via the URL specified in `frontend/env.json`:
+
+```json
+{
+  "API_BASE_URL": "http://your-backend-ip:8000"
 }
 ```
 
-## 🎨 Theming
+## Default Users
 
-This project includes a comprehensive theming system with both light and dark themes:
+The system comes with pre-configured test users:
 
-```dart
-// Access the current theme
-ThemeData theme = Theme.of(context);
+- **Admin**: `admin` / `admin123`
+- **Advisor**: `advisor1` / `advisor123` 
+- **Attendance Incharge**: `attendance_incharge` / `attendance123`
+- **Student**: `student1` / `student123`
 
-// Use theme colors
-Color primaryColor = theme.colorScheme.primary;
-```
+## Technologies Used
 
-The theme configuration includes:
-- Color schemes for light and dark modes
-- Typography styles
-- Button themes
-- Input decoration themes
-- Card and dialog themes
+### Backend
+- **FastAPI**: Modern Python web framework
+- **SQLAlchemy**: Database ORM
+- **JWT**: Authentication tokens
+- **SQLite**: Local database storage
 
-## 📱 Responsive Design
+### Frontend
+- **Flutter**: Cross-platform mobile framework
+- **Provider**: State management
+- **Hive**: Local data storage
+- **Dio**: HTTP client for API calls
 
-The app is built with responsive design using the Sizer package:
+## Recent Bug Fixes
 
-```dart
-// Example of responsive sizing
-Container(
-  width: 50.w, // 50% of screen width
-  height: 20.h, // 20% of screen height
-  child: Text('Responsive Container'),
-)
-```
-## 📦 Deployment
+✅ **Fixed logout navigation** - Resolved hardcoded route issues  
+✅ **Improved read-only mode** - Attendance now editable by default  
+✅ **Debug connection helper** - Added script for ADB connection issues  
+✅ **Data loading optimization** - Fixed advisor panel initial load  
+✅ **Type casting fixes** - Resolved UUID/int conversion errors
 
-Build the application for production:
+## Development Notes
 
-```bash
-# For Android
-flutter build apk --release
+- The app supports offline functionality with automatic sync
+- Role-based access control ensures data security
+- Digital signature support for leave approvals
+- Comprehensive error handling and user feedback
 
-# For iOS
-flutter build ios --release
-```
+## Contributing
 
-## 🙏 Acknowledgments
-- Built with [Rocket.new](https://rocket.new)
-- Powered by [Flutter](https://flutter.dev) & [Dart](https://dart.dev)
-- Styled with Material Design
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly across all user roles
+5. Submit a pull request
 
-Built with ❤️ on Rocket.new
+## License
+
+This project is developed for educational purposes.

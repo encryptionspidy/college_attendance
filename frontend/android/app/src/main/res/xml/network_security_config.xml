@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow all cleartext traffic during debug builds -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </debug-overrides>
+    
+    <!-- Production domain config for specific IP addresses -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Allow HTTP traffic to local development server -->
+        <domain includeSubdomains="false">192.168.137.189</domain>
+        <!-- Allow HTTP traffic to localhost for emulator testing -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- Allow any 192.168.x.x addresses -->
+        <domain includeSubdomains="true">192.168.0.0/16</domain>
+    </domain-config>
+    
+    <!-- Fallback base config for production -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>
