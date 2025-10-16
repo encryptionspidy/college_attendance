@@ -9,8 +9,17 @@ from database import SessionLocal
 import schemas
 import uuid
 from typing import List, Callable
+import os
+import secrets
 
-SECRET_KEY = "your_secret_key_change_in_production"
+# Security: Use environment variable or generate secure key
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    # Generate a secure random key if not set
+    SECRET_KEY = secrets.token_urlsafe(32)
+    print("⚠️ WARNING: SECRET_KEY not set in environment. Using generated key.")
+    print(f"   For production, set: export SECRET_KEY={SECRET_KEY}")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

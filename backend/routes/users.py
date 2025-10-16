@@ -21,12 +21,9 @@ def create_user(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    print(f"🔧 DEBUG: Creating user with data: {user.model_dump()}")
-    
     # Check if username already exists
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
-        print(f"🚨 ERROR: User with username '{user.username}' already exists")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A user with this username already exists"
@@ -34,7 +31,6 @@ def create_user(
     
     try:
         hashed_password = get_password_hash(user.password)
-        print(f"🔧 DEBUG: Password hashed successfully")
         
         db_user = User(
             username=user.username,
@@ -53,28 +49,24 @@ def create_user(
             profile_picture_url=user.profile_picture_url,
         )
         
-        print(f"🔧 DEBUG: User object created, adding to database")
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
         
-        print(f"🔧 DEBUG: User created successfully with ID: {db_user.id}")
         return db_user
         
-    except IntegrityError as e:
-        print(f"🚨 INTEGRITY ERROR: {str(e)}")
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A user with this username already exists"
         )
     except Exception as e:
-        print(f"🚨 UNEXPECTED ERROR in create_user: {str(e)}")
-        print(f"🚨 Error type: {type(e)}")
         db.rollback()
+        # Security: Don't expose internal errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create user: {str(e)}"
+            detail="Failed to create user. Please try again."
         )
 
 @router.get("/", response_model=List[schemas.UserOut])
@@ -255,11 +247,11 @@ def update_my_profile(
         return current_user
         
     except Exception as e:
-        print(f"🚨 Error updating profile: {str(e)}")
         db.rollback()
+        # Security: Don't expose internal errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update profile: {str(e)}"
+            detail="Failed to update profile. Please try again."
         )
 
 @router.post("/me/change-password")
@@ -286,11 +278,11 @@ def change_my_password(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"🚨 Error changing password: {str(e)}")
         db.rollback()
+        # Security: Don't expose internal errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to change password: {str(e)}"
+            detail="Failed to change password. Please try again."
         )
 
 # Add an endpoint for students to get their attendance records
@@ -301,8 +293,12 @@ def get_my_attendance(
 ):
     """Allow students to view their own attendance records"""
     from models import AttendanceRecord
+    from sqlalchemy.orm import selectinload
     
-    records = db.query(AttendanceRecord).filter(
+    records = db.query(AttendanceRecord).options(
+        selectinload(AttendanceRecord.student),
+        selectinload(AttendanceRecord.marker)
+    ).filter(
         AttendanceRecord.student_id == current_user.id
     ).order_by(AttendanceRecord.date.desc()).all()
     

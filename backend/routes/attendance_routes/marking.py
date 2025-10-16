@@ -14,23 +14,34 @@ def mark_attendance(
 	current_user: User = Depends(require_roles(["admin", "advisor", "attendance_incharge"])),
 	db: Session = Depends(get_db)
 ):
-	created_records = []
+	# Validate all students exist first (single query)
+	student_ids = [record.student_id for record in attendance_data.records]
+	existing_students = db.query(User.id).filter(User.id.in_(student_ids)).all()
+	existing_student_ids = {s[0] for s in existing_students}
+	
 	for record_data in attendance_data.records:
-		student = db.query(User).filter(User.id == record_data.student_id).first()
-		if not student:
+		if record_data.student_id not in existing_student_ids:
 			raise HTTPException(
 				status_code=status.HTTP_404_NOT_FOUND,
 				detail=f"Student with ID {record_data.student_id} not found"
 			)
-		existing_record = db.query(AttendanceRecord).filter(
-			AttendanceRecord.student_id == record_data.student_id,
-			AttendanceRecord.date == record_data.date
-		).first()
-		if existing_record:
+	
+	# Fetch existing records in a single query
+	date_student_pairs = [(r.student_id, r.date) for r in attendance_data.records]
+	existing_records = db.query(AttendanceRecord).filter(
+		db.tuple_(AttendanceRecord.student_id, AttendanceRecord.date).in_(date_student_pairs)
+	).all()
+	
+	# Create lookup dict for existing records
+	existing_map = {(r.student_id, r.date): r for r in existing_records}
+	
+	created_records = []
+	for record_data in attendance_data.records:
+		key = (record_data.student_id, record_data.date)
+		if key in existing_map:
+			existing_record = existing_map[key]
 			existing_record.status = record_data.status
 			existing_record.marked_by = current_user.id
-			db.commit()
-			db.refresh(existing_record)
 			created_records.append(existing_record)
 		else:
 			db_record = AttendanceRecord(
@@ -40,7 +51,10 @@ def mark_attendance(
 				marked_by=current_user.id
 			)
 			db.add(db_record)
-			db.commit()
-			db.refresh(db_record)
 			created_records.append(db_record)
+	
+	db.commit()
+	for record in created_records:
+		db.refresh(record)
+	
 	return created_records

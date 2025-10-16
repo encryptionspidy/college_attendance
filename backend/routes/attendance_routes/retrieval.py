@@ -1,6 +1,6 @@
 # attendance_routes/retrieval.py
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 import schemas
 from models import AttendanceRecord, User
@@ -29,7 +29,10 @@ def get_student_attendance(
             detail="Student not found"
         )
     
-    records = db.query(AttendanceRecord).filter(
+    records = db.query(AttendanceRecord).options(
+        selectinload(AttendanceRecord.student),
+        selectinload(AttendanceRecord.marker)
+    ).filter(
         AttendanceRecord.student_id == student_id
     ).order_by(AttendanceRecord.date.desc()).all()
     
@@ -40,5 +43,8 @@ def get_all_attendance_records(
 	current_user: User = Depends(get_current_user_with_roles(["admin", "advisor", "attendance_incharge"])),
 	db: Session = Depends(get_db)
 ):
-	records = db.query(AttendanceRecord).order_by(AttendanceRecord.date.desc()).all()
+	records = db.query(AttendanceRecord).options(
+        selectinload(AttendanceRecord.student),
+        selectinload(AttendanceRecord.marker)
+    ).order_by(AttendanceRecord.date.desc()).all()
 	return records

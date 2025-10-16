@@ -99,15 +99,17 @@ def set_day_status(
         }
     except SQLAlchemyError as e:
         db.rollback()
+        # Security: Don't expose internal errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error: {str(e)}"
+            detail="Database error occurred. Please try again."
         )
     except Exception as e:
         db.rollback()
+        # Security: Don't expose internal errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred: {str(e)}"
+            detail="An unexpected error occurred. Please try again."
         )
 
 @router.post("/auto-mark-holidays")
@@ -172,13 +174,14 @@ def auto_mark_holidays(
 					db.commit()
 					db.refresh(db_record)
 					created_records.append(db_record)
-		return {
-			"message": f"Successfully marked {len(holiday_dates)} holiday dates for {len(students)} students in {month}/{year}",
-			"holiday_dates": [str(d) for d in holiday_dates],
-			"total_records_created": len(created_records)
-		}
+	return {
+		"message": f"Successfully marked {len(holiday_dates)} holiday dates for {len(students)} students in {month}/{year}",
+		"holiday_dates": [str(d) for d in holiday_dates],
+		"total_records_created": len(created_records)
+	}
 	except Exception as e:
+		# Security: Don't expose internal errors
 		raise HTTPException(
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-			detail=f"Error auto-marking holidays: {str(e)}"
+			detail="Error auto-marking holidays. Please try again."
 		)

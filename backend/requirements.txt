@@ -8,3 +8,5 @@ bcrypt==3.2.2
 # Upgrade pydantic to ensure wheels exist for Python 3.13 and avoid building pydantic-core from source
 pydantic==2.9.2
 python-multipart==0.0.6
+# Security: Rate limiting
+slowapi==0.1.9

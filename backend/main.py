@@ -1,6 +1,11 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from routes import auth
 from routes.users import router as users_router
 from routes.attendance_routes.marking import router as attendance_marking_router
@@ -9,8 +14,21 @@ from routes.attendance_routes.holidays import router as attendance_holidays_rout
 from routes.request_routes.main import router as request_routes_router
 from database import engine, Base
 from auth import get_current_user
+import os
 
-app = FastAPI(title="College Attendance Marker API", version="1.0.0")
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+app = FastAPI(
+    title="College Attendance Marker API", 
+    version="1.0.0",
+    docs_url="/docs" if os.getenv("ENVIRONMENT") != "production" else None,  # Disable docs in production
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None
+)
+
+# Add rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Run lightweight migration and ensure tables exist at startup
 @app.on_event("startup")
@@ -25,16 +43,35 @@ def _startup_migration_and_create():
     Base.metadata.create_all(bind=engine)
 
 # Add CORS middleware for Flutter app
+# Security: Configure allowed origins based on environment
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+if ALLOWED_ORIGINS == ["*"]:
+    print("⚠️ WARNING: CORS allows all origins. Set ALLOWED_ORIGINS in production.")
+    print("   Example: export ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly in production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Add GZip compression for faster response times
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Add Trusted Host middleware for production
+if os.getenv("ENVIRONMENT") == "production":
+    TRUSTED_HOSTS = os.getenv("TRUSTED_HOSTS", "localhost").split(",")
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
+
 # Public router: authentication (no global auth dependency)
-app.include_router(auth.router, tags=["authentication"])  # contains POST /token
+# Rate limit: 5 login attempts per minute
+@limiter.limit("5/minute")
+def rate_limited_auth(request: Request):
+    return auth.router
+
+app.include_router(auth.router, tags=["authentication"])
 
 # Protected routers: require authenticated user by default
 app.include_router(users_router, dependencies=[Depends(get_current_user)])

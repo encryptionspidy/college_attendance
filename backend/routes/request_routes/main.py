@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 import schemas
 from models import LeaveRequest, User, AttendanceRecord
@@ -69,7 +69,9 @@ def get_my_requests(
     current_user: User = Depends(get_current_user_with_roles(["student"])),
     db: Session = Depends(get_db)
 ):
-    requests = db.query(LeaveRequest).filter(
+    requests = db.query(LeaveRequest).options(
+        selectinload(LeaveRequest.student)
+    ).filter(
         LeaveRequest.student_id == current_user.id
     ).all()
     return requests
@@ -80,7 +82,9 @@ def get_pending_requests(
     db: Session = Depends(get_db)
 ):
     # Admin + advisor can view pending requests
-    requests = db.query(LeaveRequest).filter(
+    requests = db.query(LeaveRequest).options(
+        selectinload(LeaveRequest.student)
+    ).filter(
         LeaveRequest.status == "pending"
     ).all()
     return requests
@@ -157,7 +161,9 @@ def get_all_requests(
     current_user: User = Depends(require_student_data_access),
     db: Session = Depends(get_db)
 ):
-    requests = db.query(LeaveRequest).all()
+    requests = db.query(LeaveRequest).options(
+        selectinload(LeaveRequest.student)
+    ).all()
     return requests
 
 @router.get("/export/{request_id}")
