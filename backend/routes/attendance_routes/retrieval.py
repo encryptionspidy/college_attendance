@@ -37,7 +37,7 @@ def get_student_attendance(
 
 @router.get("/", response_model=List[schemas.AttendanceRecordOut])
 def get_all_attendance_records(
-	current_user: User = Depends(get_current_user_with_roles(["admin", "advisor"])),
+	current_user: User = Depends(get_current_user_with_roles(["admin", "advisor", "attendance_incharge"])),
 	db: Session = Depends(get_db)
 ):
 	records = db.query(AttendanceRecord).order_by(AttendanceRecord.date.desc()).all()

@@ -79,7 +79,7 @@ def create_user(
 
 @router.get("/", response_model=List[schemas.UserOut])
 def get_users(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user_with_roles(["admin", "advisor", "attendance_incharge"])),
     db: Session = Depends(get_db)
 ):
     users = db.query(User).all()

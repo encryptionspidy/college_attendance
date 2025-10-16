@@ -1,5 +1,16 @@
 allprojects {
     repositories {
+        // Mirrors first to reduce SSL handshake/network failures
+        maven {
+            url "https://maven.aliyun.com/repository/google"
+            content {
+                includeGroupByRegex "com\\.android.*"
+                includeGroupByRegex "com\\.google.*"
+                includeGroupByRegex "androidx.*"
+            }
+        }
+        maven { url "https://maven.aliyun.com/repository/central" }
+        // Official
         google() {
             content {
                 includeGroupByRegex "com\\.android.*"
@@ -9,18 +20,6 @@ allprojects {
         }
         mavenCentral()
         gradlePluginPortal()
-        // Fallback repository mirrors
-        maven {
-            url "https://maven.aliyun.com/repository/google"
-            content {
-                includeGroupByRegex "com\\.android.*"
-                includeGroupByRegex "com\\.google.*"
-                includeGroupByRegex "androidx.*"
-            }
-        }
-        maven {
-            url "https://maven.aliyun.com/repository/central"
-        }
     }
 }
 

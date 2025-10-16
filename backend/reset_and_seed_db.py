@@ -1,45 +1,16 @@
-
 import asyncio
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-import bcrypt
-import os
-from datetime import date # Import date object
-
-# It's a good practice to use a configuration file for database URLs
-# but for this script, we'll define it directly.
-DATABASE_URL = "sqlite:///./college_attendance.db"
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def hash_password(password: str) -> str:
-    """Hashes the password using bcrypt."""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-import asyncio
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-import bcrypt
-import os
 from datetime import date
+from sqlalchemy.orm import Session
 
-# It's a good practice to use a configuration file for database URLs
-# but for this script, we'll define it directly.
-DATABASE_URL = "sqlite:///./college_attendance.db"
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def hash_password(password: str) -> str:
-    """Hashes the password using bcrypt."""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+# Use the same DB/session and password hashing as the main app to avoid mismatch
+from database import SessionLocal
+from auth import get_password_hash
 
 async def reset_and_seed_database():
     """
     Resets the database by clearing specified tables and seeds it with new data.
     """
-    db = SessionLocal()
+    db: Session = SessionLocal()
     try:
         print("Starting database reset and seed process...")
 
@@ -56,7 +27,7 @@ async def reset_and_seed_database():
         db.query(AttendanceRecord).delete()
         print("Done.")
 
-        # 3. Delete all users except 'admin'
+        # 3. Delete all users except 'admin' (keep admin if exists)
         print("Deleting non-admin users...")
         db.query(User).filter(User.role != 'admin').delete()
         print("Done.")
@@ -64,9 +35,25 @@ async def reset_and_seed_database():
         # Commit deletions before adding new data
         db.commit()
 
-        # 4. Create 60 new Student users
+        # 4. Ensure an admin exists
+        print("Ensuring admin user exists...")
+        admin = db.query(User).filter(User.username == "admin").first()
+        if not admin:
+            admin = User(
+                username="admin",
+                hashed_password=get_password_hash("admin123"),
+                role='admin',
+                name='Administrator'
+            )
+            db.add(admin)
+            db.commit()
+            print("Created admin user: admin / admin123")
+        else:
+            print("Admin user already present.")
+
+        # 5. Create 60 new Student users
         print("Creating 60 new Student users...")
-        hashed_password = hash_password("12345678")
+        hashed_password = get_password_hash("12345678")
         new_students = []
         for i in range(1, 61):
             username = f"23CS{i:03d}"
@@ -88,7 +75,7 @@ async def reset_and_seed_database():
         db.add_all(new_students)
         print("Done.")
 
-        # 5. Create 5 new Advisor users
+        # 6. Create 5 new Advisor users
         print("Creating 5 new Advisor users...")
         new_advisors = []
         for i in range(1, 6):
@@ -102,7 +89,7 @@ async def reset_and_seed_database():
         db.add_all(new_advisors)
         print("Done.")
 
-        # 6. Create 1 new Attendance Incharge user
+        # 7. Create 1 new Attendance Incharge user
         print("Creating 1 new Attendance Incharge user...")
         attendance_incharge = User(
             username="attendance_incharge",
@@ -116,6 +103,11 @@ async def reset_and_seed_database():
 
         db.commit()
         print("\nDatabase has been successfully reset and seeded with new data.")
+        print("\nLogin credentials:")
+        print("  Admin:           admin / admin123")
+        print("  Advisors:        advisor1..advisor5 / 12345678")
+        print("  Attendance Incharge: attendance_incharge / 12345678")
+        print("  Students:        23CS001..23CS060 / 12345678")
 
     except Exception as e:
         print(f"An error occurred: {e}")

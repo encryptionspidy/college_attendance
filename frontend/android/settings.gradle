@@ -10,6 +10,8 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
+        // Prioritize plugin portal for plugins
+        gradlePluginPortal()
         google() {
             content {
                 includeGroupByRegex "com\\.android.*"
@@ -18,7 +20,8 @@ pluginManagement {
             }
         }
         mavenCentral()
-        gradlePluginPortal()
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        maven { url "${flutterSdkPath}/bin/cache/artifacts/engine/android" }
         // Fallback repository mirrors
         maven {
             url "https://maven.aliyun.com/repository/google"
@@ -36,8 +39,36 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.6.0" apply false
+    id "com.android.application" version "8.7.0" apply false
     id "org.jetbrains.kotlin.android" version "2.1.0" apply false
 }
 
 include ":app"
+
+// Centralize dependency repositories to avoid SSL issues with Google Maven
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        // Prefer mirrors first to handle regional SSL/network issues
+        maven {
+            url "https://maven.aliyun.com/repository/google"
+            content {
+                includeGroupByRegex "com\\.android.*"
+                includeGroupByRegex "com\\.google.*"
+                includeGroupByRegex "androidx.*"
+            }
+        }
+        maven { url "https://maven.aliyun.com/repository/central" }
+        // Official repos
+        google() {
+            content {
+                includeGroupByRegex "com\\.android.*"
+                includeGroupByRegex "com\\.google.*"
+                includeGroupByRegex "androidx.*"
+            }
+        }
+        mavenCentral()
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        maven { url "${flutterSdkPath}/bin/cache/artifacts/engine/android" }
+    }
+}
