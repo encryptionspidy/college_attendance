@@ -159,4 +159,7 @@ FINAL_*.md
 PHASE_*.md
 OPTIMIZATION_GUIDE.md
 frontend/ANALYZER_CLEANUP_SUMMARY.md
-#bug_fix_ai_promp.txt
+bug_fix_ai_promp.txt
+BUG_FIXES_APPLIED.md
+PRODUCTION_*.md
+WORK_COMPLETED_SUMMARY.txt
