@@ -8,6 +8,10 @@ Production-ready mobile application for digitizing academic workflows: attendanc
 ```bash
 cd backend
 pip install -r requirements.txt
+
+# Set required SECRET_KEY (development only - generate your own for production)
+export SECRET_KEY="your-dev-secret-key-here"
+
 python3 add_indexes.py  # First time only
 python3 run_server.py
 ```
@@ -16,6 +20,11 @@ python3 run_server.py
 ```bash
 cd frontend
 flutter pub get
+
+# Run with custom API URL (replace with your backend IP)
+flutter run --debug --android-skip-build-dependency-validation --dart-define=API_BASE_URL=http://192.168.137.152:8000
+
+# Or run normally (uses default localhost)
 flutter run
 ```
 
@@ -27,7 +36,7 @@ flutter run
 - **Security:** 8/8 checks passed | Zero vulnerabilities
 - **Code Quality:** Optimized, formatted, clean
 
-**[See Full Optimization Guide](OPTIMIZATION_GUIDE.md)**
+
 
 ## 🏗️ Architecture
 
@@ -46,11 +55,24 @@ flutter run
 
 ## 🔧 Configuration
 
-Copy `backend/.env.example` to `backend/.env`:
+### Development (Required)
+The backend requires a SECRET_KEY environment variable:
 ```bash
-SECRET_KEY=<generate-secure-key>
+# Quick setup for development
+export SECRET_KEY="your-dev-secret-key-here"
+```
+
+### Production (Optional .env file)
+For production, copy `backend/.env.example` to `backend/.env` and configure:
+```bash
+# Generate a secure key
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Add to .env file
+SECRET_KEY=<generated-secure-key>
 ENVIRONMENT=production
 ALLOWED_ORIGINS=https://yourdomain.com
+DATABASE_URL=postgresql://user:password@localhost/dbname
 ```
 
 ## 🧪 Testing
@@ -64,9 +86,9 @@ python3 verify_optimizations.py  # Verify setup
 
 ## 📝 Documentation
 
-- **Main:** [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md) - Complete optimization guide
 - **Backend:** [backend/README.md](backend/README.md) - API documentation
 - **Frontend:** [frontend/README.md](frontend/README.md) - App architecture
+- **Notes:** [NOTES.md](NOTES.md) - Development notes and updates
 
 ## 🎯 Key Features
 
@@ -98,8 +120,8 @@ python3 verify_optimizations.py  # Verify setup
 ## 📞 Support
 
 For issues or questions:
-1. Check [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md)
-2. Review backend/frontend README files
+1. Review backend/frontend README files
+2. Check [NOTES.md](NOTES.md) for development updates
 3. Run verification scripts
 4. Check application logs
 
