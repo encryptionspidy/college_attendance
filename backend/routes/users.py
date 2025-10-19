@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
@@ -12,6 +12,7 @@ from auth import (
 import uuid
 import os
 from datetime import datetime
+from logging_config import logger
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -71,10 +72,12 @@ def create_user(
 
 @router.get("/", response_model=List[schemas.UserOut])
 def get_users(
+    skip: int = Query(0, ge=0, description="Number of users to skip"),
+    limit: int = Query(100, ge=1, le=500, description="Max users to return"),
     current_user: User = Depends(get_current_user_with_roles(["admin", "advisor", "attendance_incharge"])),
     db: Session = Depends(get_db)
 ):
-    users = db.query(User).all()
+    users = db.query(User).offset(skip).limit(limit).all()
     return users
 
 @router.get("/me", response_model=schemas.UserOut)
@@ -83,10 +86,12 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 @router.get("/students", response_model=List[schemas.UserOut])
 def get_students(
+    skip: int = Query(0, ge=0, description="Number of students to skip"),
+    limit: int = Query(100, ge=1, le=500, description="Max students to return"),
     current_user: User = Depends(get_current_user_with_roles(["admin", "advisor", "attendance_incharge"])),
     db: Session = Depends(get_db)
 ):
-    students = db.query(User).filter(User.role == "student").all()
+    students = db.query(User).filter(User.role == "student").offset(skip).limit(limit).all()
     return students
 
 @router.put("/{user_id}", response_model=schemas.UserOut)

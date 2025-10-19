@@ -112,6 +112,8 @@ college_attendance.db
 *.log
 backend.log
 server.log
+backend/logs/
+logs/
 
 # IDE files
 .vscode/
