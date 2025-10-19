@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, ForeignKey, Text, DateTime, Integer, Float, Index
+from sqlalchemy import Column, String, Date, ForeignKey, Text, DateTime, Integer, Float, Index, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -13,12 +13,11 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # New fields for student profile
-    roll_no = Column(String(20), nullable=True)
+    roll_no = Column(String(20), nullable=True, unique=True)
     name = Column(String(100), nullable=True)
     semester = Column(Integer, nullable=True)
     year = Column(Integer, nullable=True)
     dob = Column(Date, nullable=True)
-    age = Column(Integer, nullable=True)
     gender = Column(String(10), nullable=True)
     cgpa = Column(Float, nullable=True)
     course = Column(String(100), nullable=True)
@@ -33,7 +32,8 @@ class LeaveRequest(Base):
     end_date = Column(Date, nullable=False)
     reason = Column(Text, nullable=False)
     status = Column(String(16), nullable=False, default="pending", index=True)
-    image_data = Column(Text)
+    image_url = Column(String(512), nullable=True)
+    image_data = Column(LargeBinary, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     student = relationship("User")
     
@@ -47,7 +47,7 @@ class AttendanceRecord(Base):
     student_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     date = Column(Date, nullable=False, index=True)
     status = Column(String(16), nullable=False)
-    marked_by = Column(String, ForeignKey("users.id"))
+    marked_by = Column(String, ForeignKey("users.id", ondelete="SET NULL"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     student = relationship("User", foreign_keys=[student_id])
     marker = relationship("User", foreign_keys=[marked_by])

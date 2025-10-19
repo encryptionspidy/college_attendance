@@ -1,28 +1,38 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models import User
 from database import SessionLocal
 import schemas
-import uuid
 from typing import List, Callable
 import os
-import secrets
 
-# Security: Use environment variable or generate secure key
+# Import rate limiter
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Security: Require SECRET_KEY be provided via environment for stable JWTs
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    # Generate a secure random key if not set
-    SECRET_KEY = secrets.token_urlsafe(32)
-    print("⚠️ WARNING: SECRET_KEY not set in environment. Using generated key.")
-    print(f"   For production, set: export SECRET_KEY={SECRET_KEY}")
+    raise RuntimeError(
+        "SECRET_KEY environment variable is required. Set SECRET_KEY before starting the application."
+    )
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Dummy hash used to mitigate timing attacks when a user is not found.
+# We compute one hash once at import time and reuse it for verification
+# when the user record is missing. The actual string hashed here is
+# irrelevant; the goal is to perform a full password-verify operation.
+DUMMY_HASH = pwd_context.hash("dummy-password-for-timing-mitigation")
 security = HTTPBearer()
 
 router = APIRouter()
@@ -41,14 +51,23 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 def authenticate_user(db: Session, username: str, password: str):
+    """Authenticate user while avoiding timing leaks.
+
+    Always run the password verification step using either the real
+    user's hashed password or a module-level DUMMY_HASH so the timing
+    of the operation doesn't reveal whether the user exists.
+    """
     user = db.query(User).filter(User.username == username).first()
-    if not user or not verify_password(password, user.hashed_password):
+    candidate_hash = user.hashed_password if user else DUMMY_HASH
+    verified = verify_password(password, candidate_hash)
+    if not (user and verified):
         return None
     return user
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    # Use timezone-aware datetime for JWT exp claim
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -85,19 +104,10 @@ def get_current_user_with_roles(allowed_roles: List[str]) -> Callable:
         return current_user
     return role_checker
 
-def require_roles(allowed_roles: List[str]) -> Callable:
-    """Unified flexible roles-based dependency.
+# Alias for backwards compatibility
+require_roles = get_current_user_with_roles
 
-    Usage in routes:
-        @router.get("/resource")
-        def handler(current_user: User = Depends(require_roles(["admin", "advisor"]))):
-            ...
 
-    Or:
-        @router.get("/resource", dependencies=[Depends(require_roles(["admin"]))])
-        async def handler(): ...
-    """
-    return get_current_user_with_roles(allowed_roles)
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Dependency for admin-only endpoints"""
@@ -145,7 +155,8 @@ def require_student_data_access(current_user: User = Depends(get_current_user)) 
     return current_user
 
 @router.post("/token", response_model=schemas.Token)
-def login_for_access_token(form_data: schemas.UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login_for_access_token(request: Request, form_data: schemas.UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(

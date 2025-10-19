@@ -123,12 +123,16 @@ def approve_request(
                 ))
             current_date += timedelta(days=1)
         db.commit()
+        db.refresh(request)
     except Exception:
-        # Even if attendance update fails, keep approval state; surface error via logs only
+        # Even if attendance update fails, keep approval state; re-attach and commit
         db.rollback()
-        request.status = "approved"
-        db.commit()
-    db.refresh(request)
+        # Re-query the request to reattach it to the session
+        request = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
+        if request:
+            request.status = "approved"
+            db.commit()
+            db.refresh(request)
     try:
         _archive_request_to_file(request)
     except Exception:

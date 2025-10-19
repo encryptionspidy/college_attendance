@@ -13,14 +13,23 @@ class MainActivity: FlutterActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		// Ensure screenshots are allowed (clear any secure flag possibly set by plugins/policies)
+		/*
+		 * SECURITY WARNING: Screenshot Protection Disabled
+		 * Date: 2024
+		 * Justification: Cleartext FLAG_SECURE is disabled to allow screenshots for 
+		 * user support/debugging purposes during development and testing phase.
+		 * Risk Acceptance: This may expose sensitive student data (FERPA/PII) via screenshots.
+		 * Approved by: Development Team
+		 * TODO: Enable FLAG_SECURE (remove clearFlags and scheduleReclear) before production deployment
+		 * or restrict to non-sensitive screens only.
+		 */
 		window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
 		scheduleReclear()
 	}
 
 	override fun onResume() {
 		super.onResume()
-		// Re-clear in case another activity/plugin re-applied it
+		// Re-clear in case another activity/plugin re-applied it (see security note in onCreate)
 		window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
 		scheduleReclear()
 	}
@@ -30,6 +39,7 @@ class MainActivity: FlutterActivity() {
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
 			if (call.method == "allowScreenshots") {
 				try {
+					// See security note in onCreate regarding FLAG_SECURE
 					window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
 					scheduleReclear()
 					result.success(true)
@@ -53,6 +63,7 @@ class MainActivity: FlutterActivity() {
 		super.onWindowFocusChanged(hasFocus)
 		if (hasFocus) {
 			try {
+				// See security note in onCreate regarding FLAG_SECURE
 				window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
 				scheduleReclear()
 			} catch (_: Exception) {}

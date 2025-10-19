@@ -103,6 +103,7 @@ async def reset_and_seed_database():
 
         db.commit()
         print("\nDatabase has been successfully reset and seeded with new data.")
+        print("\n⚠️  WARNING: The following credentials are for DEVELOPMENT use only!")
         print("\nLogin credentials:")
         print("  Admin:           admin / admin123")
         print("  Advisors:        advisor1..advisor5 / 12345678")

@@ -60,3 +60,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter analyzer output files
+flutter_analyze*.txt
+*.flutter_analyze.txt
+flutter_test_output.txt

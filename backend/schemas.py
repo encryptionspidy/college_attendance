@@ -1,11 +1,19 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime
+from enum import Enum
 import uuid
+
+class UserRole(str, Enum):
+    student = "student"
+    faculty = "faculty"
+    admin = "admin"
+    advisor = "advisor"
+    attendance_incharge = "attendance_incharge"
 
 class UserBase(BaseModel):
     username: str
-    role: str
+    role: UserRole
 
 class UserCreate(UserBase):
     password: str
@@ -63,7 +71,7 @@ class ChangePasswordRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-    role: str
+    role: UserRole
 
 class LeaveRequestBase(BaseModel):
     start_date: date
@@ -107,7 +115,7 @@ class AttendanceMarkRequest(BaseModel):
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
-    role: Optional[str] = None
+    role: Optional[UserRole] = None
     password: Optional[str] = None
     # Optional profile fields for admin updates
     roll_no: Optional[str] = None

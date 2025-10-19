@@ -160,8 +160,6 @@ def auto_mark_holidays(
 				if existing_record:
 					existing_record.status = "Holiday"
 					existing_record.marked_by = current_user.id
-					db.commit()
-					db.refresh(existing_record)
 					created_records.append(existing_record)
 				else:
 					db_record = AttendanceRecord(
@@ -171,14 +169,17 @@ def auto_mark_holidays(
 						marked_by=current_user.id
 					)
 					db.add(db_record)
-					db.commit()
-					db.refresh(db_record)
 					created_records.append(db_record)
-	return {
-		"message": f"Successfully marked {len(holiday_dates)} holiday dates for {len(students)} students in {month}/{year}",
-		"holiday_dates": [str(d) for d in holiday_dates],
-		"total_records_created": len(created_records)
-	}
+		# Commit once after all records are processed
+		db.commit()
+		# Refresh records after commit
+		for record in created_records:
+			db.refresh(record)
+		return {
+			"message": f"Successfully marked {len(holiday_dates)} holiday dates for {len(students)} students in {month}/{year}",
+			"holiday_dates": [str(d) for d in holiday_dates],
+			"total_records_created": len(created_records)
+		}
 	except Exception as e:
 		# Security: Don't expose internal errors
 		raise HTTPException(

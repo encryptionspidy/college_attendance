@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -12,9 +12,11 @@ from routes.attendance_routes.marking import router as attendance_marking_router
 from routes.attendance_routes.retrieval import router as attendance_retrieval_router
 from routes.attendance_routes.holidays import router as attendance_holidays_router
 from routes.request_routes.main import router as request_routes_router
-from database import engine, Base
+from database import engine, Base, get_db
 from auth import get_current_user
+from models import User
 import os
+import shutil
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -66,11 +68,6 @@ if os.getenv("ENVIRONMENT") == "production":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 
 # Public router: authentication (no global auth dependency)
-# Rate limit: 5 login attempts per minute
-@limiter.limit("5/minute")
-def rate_limited_auth(request: Request):
-    return auth.router
-
 app.include_router(auth.router, tags=["authentication"])
 
 # Protected routers: require authenticated user by default
@@ -81,12 +78,6 @@ app.include_router(attendance_retrieval_router, dependencies=[Depends(get_curren
 app.include_router(attendance_holidays_router, dependencies=[Depends(get_current_user)])
 
 # Serve static files (e.g., uploaded profile pictures)
-import os
-from fastapi import UploadFile, File, HTTPException
-from database import get_db
-from models import User
-import shutil
-
 static_dir = os.path.join(os.path.dirname(__file__), 'static')
 uploads_dir = os.path.join(static_dir, 'uploads')
 os.makedirs(uploads_dir, exist_ok=True)
