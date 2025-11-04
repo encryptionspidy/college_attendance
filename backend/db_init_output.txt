@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/cykosynergy/projects/college_attendance_marker/backend/force_init_db.py", line 15, in <module>
+    from database import Base, engine, SessionLocal
+  File "/home/cykosynergy/projects/college_attendance_marker/backend/database.py", line 1, in <module>
+    from sqlalchemy import create_engine, event, pool
+ModuleNotFoundError: No module named 'sqlalchemy'
+================================================================================
+DATABASE INITIALIZATION SCRIPT
+================================================================================
+
+1. Importing modules...
+
+✗ ERROR: No module named 'sqlalchemy'

@@ -1,6 +1,7 @@
 # attendance_routes/marking.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import tuple_
 from typing import List
 import schemas
 from models import AttendanceRecord, User
@@ -29,7 +30,7 @@ def mark_attendance(
 	# Fetch existing records in a single query
 	date_student_pairs = [(r.student_id, r.date) for r in attendance_data.records]
 	existing_records = db.query(AttendanceRecord).filter(
-		db.tuple_(AttendanceRecord.student_id, AttendanceRecord.date).in_(date_student_pairs)
+		tuple_(AttendanceRecord.student_id, AttendanceRecord.date).in_(date_student_pairs)
 	).all()
 	
 	# Create lookup dict for existing records

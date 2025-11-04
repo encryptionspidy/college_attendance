@@ -1,76 +1,101 @@
 package com.college_attendance_marker.app
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.WindowManager
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
-	private val channelName = "app/security"
+	private val CHANNEL = "app/security"
+	private val TAG = "MainActivity"
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		/*
-		 * SECURITY WARNING: Screenshot Protection Disabled
-		 * Date: 2024
-		 * Justification: Cleartext FLAG_SECURE is disabled to allow screenshots for 
-		 * user support/debugging purposes during development and testing phase.
-		 * Risk Acceptance: This may expose sensitive student data (FERPA/PII) via screenshots.
-		 * Approved by: Development Team
-		 * TODO: Enable FLAG_SECURE (remove clearFlags and scheduleReclear) before production deployment
-		 * or restrict to non-sensitive screens only.
-		 */
-		window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-		scheduleReclear()
+		Log.d(TAG, "onCreate - Enabling screenshots")
+		enableScreenshots()
 	}
 
 	override fun onResume() {
 		super.onResume()
-		// Re-clear in case another activity/plugin re-applied it (see security note in onCreate)
-		window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-		scheduleReclear()
+		Log.d(TAG, "onResume - Enabling screenshots")
+		enableScreenshots()
 	}
 
-	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-		super.configureFlutterEngine(flutterEngine)
-		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
-			if (call.method == "allowScreenshots") {
-				try {
-					// See security note in onCreate regarding FLAG_SECURE
-					window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-					scheduleReclear()
-					result.success(true)
-				} catch (e: Exception) {
-					result.error("ERROR", e.message, null)
-				}
-			} else {
-				result.notImplemented()
-			}
-		}
+	override fun onStart() {
+		super.onStart()
+		Log.d(TAG, "onStart - Enabling screenshots")
+		enableScreenshots()
 	}
 
-	private fun scheduleReclear() {
-		// Some plugins or transitions might reapply the flag; clear again shortly after.
-		Handler(Looper.getMainLooper()).postDelayed({
-			try { window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) } catch (_: Exception) {}
-		}, 500)
+	override fun onPostCreate(savedInstanceState: Bundle?) {
+		super.onPostCreate(savedInstanceState)
+		Log.d(TAG, "onPostCreate - Enabling screenshots")
+		enableScreenshots()
+	}
+
+	override fun onPostResume() {
+		super.onPostResume()
+		Log.d(TAG, "onPostResume - Enabling screenshots")
+		enableScreenshots()
 	}
 
 	override fun onWindowFocusChanged(hasFocus: Boolean) {
 		super.onWindowFocusChanged(hasFocus)
-		if (hasFocus) {
-			try {
-				// See security note in onCreate regarding FLAG_SECURE
-				window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-				scheduleReclear()
-			} catch (_: Exception) {}
+		Log.d(TAG, "onWindowFocusChanged - Enabling screenshots (hasFocus: $hasFocus)")
+		enableScreenshots()
+	}
+
+	override fun onAttachedToWindow() {
+		super.onAttachedToWindow()
+		Log.d(TAG, "onAttachedToWindow - Enabling screenshots")
+		enableScreenshots()
+	}
+
+	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+		super.configureFlutterEngine(flutterEngine)
+		Log.d(TAG, "configureFlutterEngine - Enabling screenshots")
+
+		enableScreenshots()
+
+		// Setup method channel for manual screenshot control
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+			when (call.method) {
+				"allowScreenshots" -> {
+					Log.d(TAG, "Method channel called - Enabling screenshots")
+					enableScreenshots()
+					result.success(true)
+				}
+				else -> result.notImplemented()
+			}
 		}
 	}
 
-	override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-		super.cleanUpFlutterEngine(flutterEngine)
+	/**
+	 * Aggressively enable screenshots by clearing FLAG_SECURE
+	 * This method uses multiple approaches to ensure FLAG_SECURE is removed
+	 */
+	private fun enableScreenshots() {
+		try {
+			val w = window
+			if (w != null) {
+				// Method 1: Clear FLAG_SECURE using clearFlags
+				w.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+
+				// Method 2: Manually remove FLAG_SECURE from window attributes
+				val attrs = w.attributes
+				if (attrs != null) {
+					// Use bitwise AND with inverted FLAG_SECURE to remove it
+					attrs.flags = attrs.flags and WindowManager.LayoutParams.FLAG_SECURE.inv()
+					w.attributes = attrs
+					Log.d(TAG, "✅ Screenshots enabled - FLAG_SECURE removed from window attributes")
+				}
+			} else {
+				Log.w(TAG, "⚠️ Window is null, cannot enable screenshots yet")
+			}
+		} catch (e: Exception) {
+			Log.e(TAG, "❌ Error enabling screenshots: ${e.message}", e)
+		}
 	}
 }

@@ -94,6 +94,32 @@ def get_students(
     students = db.query(User).filter(User.role == "student").offset(skip).limit(limit).all()
     return students
 
+@router.get("/advisors", response_model=List[schemas.UserOut])
+def get_advisors(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get list of all advisors for assignment/selection"""
+    advisors = db.query(User).filter(User.role == "advisor").all()
+    return advisors
+
+@router.get("/lookup")
+def get_user_lookup(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a map of user IDs to user names for efficient name resolution.
+    Returns: {user_id: user_name, ...}
+    """
+    users = db.query(User.id, User.name, User.username).all()
+    lookup = {}
+    for user_id, name, username in users:
+        # Use name if available, otherwise fall back to username
+        display_name = name if name else username
+        lookup[user_id] = display_name
+    return lookup
+
 @router.put("/{user_id}", response_model=schemas.UserOut)
 def update_user(
     user_id: str,

@@ -1,556 +1,616 @@
 import 'dart:ui';
-
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import '../../services/api_service.dart';
 
-import '../../core/app_export.dart';
-import './widgets/date_picker_widget.dart';
-import './widgets/description_input_widget.dart';
-import './widgets/form_header_widget.dart';
-import './widgets/image_attachment_widget.dart';
-import './widgets/reason_dropdown_widget.dart';
-import './widgets/submit_button_widget.dart';
-
+/// Modern Leave Request Form - Modal Popup with Liquid Glass Theme
 class LeaveRequestForm extends StatefulWidget {
-  const LeaveRequestForm({Key? key}) : super(key: key);
+  const LeaveRequestForm({super.key});
 
   @override
   State<LeaveRequestForm> createState() => _LeaveRequestFormState();
 }
 
-class _LeaveRequestFormState extends State<LeaveRequestForm>
-    with TickerProviderStateMixin {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ScrollController _scrollController = ScrollController();
+class _LeaveRequestFormState extends State<LeaveRequestForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _reasonController = TextEditingController();
 
-  // Form data
-  DateTime? _fromDate;
-  DateTime? _toDate;
-  String? _selectedReason;
-  String _description = '';
-  List<String> _attachedImages = [];
+  DateTime? _startDate;
+  DateTime? _endDate;
+  File? _attachedImage;
+  bool _isSubmitting = false;
 
-  // Form validation
-  final Map<String, String?> _errors = {};
-  bool _isLoading = false;
-  bool _hasUnsavedChanges = false;
+  // Leave type options
+  final List<String> _leaveTypes = [
+    'Medical Leave',
+    'Family Emergency',
+    'Personal Leave',
+    'Academic Event',
+    'Other',
+  ];
+  String? _selectedLeaveType;
 
-  // Auto-save timer
-  DateTime _lastSaved = DateTime.now();
-
-  // Mock data for demonstration
-  final Map<String, dynamic> _mockUserData = {
-    "id": "STU001",
-    "name": "Sarah Johnson",
-    "email": "sarah.johnson@college.edu",
-    "rollNumber": "CS2021001",
-    "department": "Computer Science",
-    "year": "3rd Year",
-    "advisor": "Dr. Michael Chen",
-  };
+  // Advisor selection
+  List<Map<String, dynamic>> _advisors = [];
+  List<String> _selectedAdvisorIds = []; // Changed to list for multiple selection
+  bool _isLoadingAdvisors = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDraftData();
+    _loadAdvisors();
+  }
+
+  Future<void> _loadAdvisors() async {
+    try {
+      final advisors = await ApiService().getAdvisors();
+      setState(() {
+        _advisors = List<Map<String, dynamic>>.from(advisors);
+        _isLoadingAdvisors = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingAdvisors = false);
+      print('Failed to load advisors: $e');
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _reasonController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor:
-            isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        body: Stack(
-          children: [
-            // Glassmorphism background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppTheme.primaryDark.withValues(alpha: 0.1),
-                          AppTheme.secondaryDark.withValues(alpha: 0.05),
-                        ]
-                      : [
-                          AppTheme.primaryLight.withValues(alpha: 0.1),
-                          AppTheme.secondaryLight.withValues(alpha: 0.05),
-                        ],
-                ),
-              ),
-            ),
-            // Main content
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildAppBar(isDark),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      child: Column(
-                        children: [
-                          SizedBox(height: 2.h),
-                          FormHeaderWidget(
-                            currentStep: _getCurrentStep(),
-                            totalSteps: 5,
-                          ),
-                          SizedBox(height: 3.h),
-                          _buildFormContent(),
-                          SizedBox(height: 10.h), // Space for sticky button
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Sticky submit button
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: SubmitButtonWidget(
-                    isLoading: _isLoading,
-                    onSubmit: _submitForm,
-                    isEnabled: _isFormValid(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(bool isDark) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppTheme.surfaceDark.withValues(alpha: 0.9)
-            : AppTheme.surfaceLight.withValues(alpha: 0.9),
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? AppTheme.dividerDark : AppTheme.dividerLight,
-            width: 1.0,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => _onBackPressed(),
-            icon: CustomIconWidget(
-              iconName: 'arrow_back',
-              color:
-                  isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              size: 24,
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Leave Request',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  _mockUserData["name"] as String,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isDark
-                            ? AppTheme.textSecondaryDark
-                            : AppTheme.textSecondaryLight,
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          if (_hasUnsavedChanges)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.onDutyStatus : AppTheme.onDutyStatus,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Draft',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormContent() {
-    return Column(
-      children: [
-        DatePickerWidget(
-          label: 'From Date',
-          selectedDate: _fromDate,
-          onDateSelected: (date) {
-            setState(() {
-              _fromDate = date;
-              _hasUnsavedChanges = true;
-              _errors.remove('fromDate');
-              // Auto-adjust to date if it's before from date
-              if (_toDate != null && _toDate!.isBefore(date)) {
-                _toDate = date;
-              }
-            });
-            _saveDraft();
-          },
-          firstDate: DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
-          errorText: _errors['fromDate'],
-        ),
-        SizedBox(height: 3.h),
-        DatePickerWidget(
-          label: 'To Date',
-          selectedDate: _toDate,
-          onDateSelected: (date) {
-            setState(() {
-              _toDate = date;
-              _hasUnsavedChanges = true;
-              _errors.remove('toDate');
-            });
-            _saveDraft();
-          },
-          firstDate: _fromDate ?? DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
-          errorText: _errors['toDate'],
-        ),
-        SizedBox(height: 3.h),
-        ReasonDropdownWidget(
-          selectedReason: _selectedReason,
-          onReasonChanged: (reason) {
-            setState(() {
-              _selectedReason = reason;
-              _hasUnsavedChanges = true;
-              _errors.remove('reason');
-            });
-            _saveDraft();
-          },
-          errorText: _errors['reason'],
-        ),
-        SizedBox(height: 3.h),
-        DescriptionInputWidget(
-          description: _description,
-          onDescriptionChanged: (description) {
-            setState(() {
-              _description = description;
-              _hasUnsavedChanges = true;
-              _errors.remove('description');
-            });
-            _saveDraft();
-          },
-          errorText: _errors['description'],
-        ),
-        SizedBox(height: 3.h),
-        ImageAttachmentWidget(
-          attachedImages: _attachedImages,
-          onImagesChanged: (images) {
-            setState(() {
-              _attachedImages = images;
-              _hasUnsavedChanges = true;
-            });
-            _saveDraft();
-          },
-        ),
-      ],
-    );
-  }
-
-  int _getCurrentStep() {
-    int step = 0;
-    if (_fromDate != null) step++;
-    if (_toDate != null) step++;
-    if (_selectedReason != null) step++;
-    if (_description.isNotEmpty) step++;
-    if (_attachedImages.isNotEmpty) step++;
-    return step;
-  }
-
-  bool _isFormValid() {
-    return _fromDate != null &&
-        _toDate != null &&
-        _selectedReason != null &&
-        _description.trim().isNotEmpty &&
-        _description.trim().length >= 10;
-  }
-
-  void _validateForm() {
-    _errors.clear();
-
-    if (_fromDate == null) {
-      _errors['fromDate'] = 'Please select start date';
-    }
-
-    if (_toDate == null) {
-      _errors['toDate'] = 'Please select end date';
-    } else if (_fromDate != null && _toDate!.isBefore(_fromDate!)) {
-      _errors['toDate'] = 'End date must be after start date';
-    }
-
-    if (_selectedReason == null) {
-      _errors['reason'] = 'Please select a reason';
-    }
-
-    if (_description.trim().isEmpty) {
-      _errors['description'] = 'Please provide a detailed explanation';
-    } else if (_description.trim().length < 10) {
-      _errors['description'] = 'Description must be at least 10 characters';
-    }
-  }
-
-  Future<void> _submitForm() async {
-    _validateForm();
-
-    if (_errors.isNotEmpty) {
-      setState(() {});
-      _showErrorMessage('Please fix the errors before submitting');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Generate mock tracking number
-      final trackingNumber =
-          'LR${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-
-      // Haptic feedback
-      HapticFeedback.lightImpact();
-
-      // Clear draft
-      _clearDraft();
-
-      // Show success dialog
-      _showSuccessDialog(trackingNumber);
-    } catch (e) {
-      _showErrorMessage('Failed to submit request. Please try again.');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _showSuccessDialog(String trackingNumber) {
-    showDialog(
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Dialog(
-          backgroundColor: isDark ? AppTheme.cardDark : AppTheme.cardLight,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: EdgeInsets.all(6.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(4.w),
-                  decoration: BoxDecoration(
-                    color: AppTheme.presentStatus.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: CustomIconWidget(
-                    iconName: 'check_circle',
-                    color: AppTheme.presentStatus,
-                    size: 48,
-                  ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  'Request Submitted!',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.presentStatus,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  'Your leave request has been submitted successfully.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 1.h),
-                Container(
-                  padding: EdgeInsets.all(3.w),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppTheme.surfaceDark.withValues(alpha: 0.5)
-                        : AppTheme.surfaceLight.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Tracking Number',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isDark
-                                  ? AppTheme.textSecondaryDark
-                                  : AppTheme.textSecondaryLight,
-                            ),
-                      ),
-                      SizedBox(height: 0.5.h),
-                      Text(
-                        trackingNumber,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppTheme.primaryDark
-                                      : AppTheme.primaryLight,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Continue'),
-                  ),
-                ),
-              ],
+      initialDate: isStartDate
+          ? (_startDate ?? DateTime.now())
+          : (_endDate ?? _startDate ?? DateTime.now()),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF00D9FF),
+              surface: Color(0xFF1D1E33),
+              onSurface: Colors.white,
             ),
           ),
+          child: child!,
         );
       },
     );
+
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = picked;
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+            _endDate = null;
+          }
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
   }
 
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? AppTheme.errorDark
-            : AppTheme.errorLight,
-      ),
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
     );
-  }
 
-  Future<bool> _onWillPop() async {
-    if (_hasUnsavedChanges) {
-      return await _showUnsavedChangesDialog() ?? false;
-    }
-    return true;
-  }
-
-  void _onBackPressed() async {
-    if (_hasUnsavedChanges) {
-      final shouldPop = await _showUnsavedChangesDialog();
-      if (shouldPop == true && mounted) {
-        Navigator.of(context).pop();
-      }
-    } else {
-      Navigator.of(context).pop();
+    if (image != null) {
+      setState(() {
+        _attachedImage = File(image.path);
+      });
     }
   }
 
-  Future<bool?> _showUnsavedChangesDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return showDialog<bool>(
+  void _showAdvisorSelector() {
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppTheme.cardDark : AppTheme.cardLight,
-        title: Text(
-          'Unsaved Changes',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+        backgroundColor: const Color(0xFF1D1E33),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Select Advisor(s)',
+          style: TextStyle(color: Colors.white),
         ),
-        content: Text(
-          'You have unsaved changes. Do you want to save as draft before leaving?',
-          style: Theme.of(context).textTheme.bodyMedium,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _advisors.map((advisor) {
+              final advisorId = advisor['id'] as String;
+              final isSelected = _selectedAdvisorIds.contains(advisorId);
+              return CheckboxListTile(
+                title: Text(
+                  advisor['name'] ?? advisor['username'] ?? 'Unknown',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  'Advisor',
+                  style: TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                value: isSelected,
+                activeColor: const Color(0xFF00D9FF),
+                checkColor: Colors.white,
+                onChanged: (bool? value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedAdvisorIds.add(advisorId);
+                    } else {
+                      _selectedAdvisorIds.remove(advisorId);
+                    }
+                  });
+                  Navigator.pop(context);
+                  _showAdvisorSelector(); // Reopen to show updated selection
+                },
+              );
+            }).toList(),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () {
-              _clearDraft();
-              Navigator.of(context).pop(true);
+              setState(() {
+                _selectedAdvisorIds.clear();
+              });
+              Navigator.pop(context);
             },
-            child: Text(
-              'Discard',
-              style: TextStyle(
-                color: isDark ? AppTheme.errorDark : AppTheme.errorLight,
-              ),
-            ),
+            child: const Text('Clear All', style: TextStyle(color: Colors.redAccent)),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _saveDraft();
-              Navigator.of(context).pop(true);
-            },
-            child: const Text('Save Draft'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done', style: TextStyle(color: Color(0xFF00D9FF))),
           ),
         ],
       ),
     );
   }
 
-  void _loadDraftData() {
-    // Simulate loading draft data from local storage
-    // In real implementation, this would load from Hive database
+  Future<void> _submitRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_startDate == null || _endDate == null) {
+      _showSnackBar('Please select start and end dates', isError: true);
+      return;
+    }
+    if (_selectedLeaveType == null) {
+      _showSnackBar('Please select leave type', isError: true);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      // Convert image to base64 if attached
+      String? imageData;
+      if (_attachedImage != null) {
+        final bytes = await _attachedImage!.readAsBytes();
+        imageData = base64Encode(bytes);
+      }
+
+      final reason = '[$_selectedLeaveType] ${_reasonController.text.trim()}';
+
+      final result = await ApiService().createLeaveRequest(
+        startDate: DateFormat('yyyy-MM-dd').format(_startDate!),
+        endDate: DateFormat('yyyy-MM-dd').format(_endDate!),
+        reason: reason,
+        imageData: imageData,
+        advisorIds: _selectedAdvisorIds.isNotEmpty ? _selectedAdvisorIds : null,
+      );
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+
+        if (result['success'] == true) {
+          _showSnackBar('Leave request submitted successfully!');
+          await Future.delayed(const Duration(seconds: 1));
+          if (mounted) Navigator.pop(context, true);
+        } else {
+          _showSnackBar(result['error'] ?? 'Failed to submit request', isError: true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        _showSnackBar('Error: $e', isError: true);
+      }
+    }
   }
 
-  void _saveDraft() {
-    _lastSaved = DateTime.now();
-    // Simulate saving draft data to local storage
-    // In real implementation, this would save to Hive database
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? const Color(0xFFEF5350) : const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.all(4.w),
+      ),
+    );
   }
 
-  void _clearDraft() {
-    setState(() {
-      _hasUnsavedChanges = false;
-    });
-    // Simulate clearing draft data from local storage
-    // In real implementation, this would clear from Hive database
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 85.h,
+      decoration: const BoxDecoration(
+        color: Color(0xFF0A0E21),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: EdgeInsets.only(top: 1.h),
+            width: 10.w,
+            height: 0.5.h,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: EdgeInsets.fromLTRB(6.w, 2.h, 6.w, 2.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Leave Request',
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Submit your leave application',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+
+          // Form
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 6.w),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Leave Type
+                    _buildSectionLabel('Leave Type'),
+                    _buildGlassContainer(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedLeaveType,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Select leave type',
+                          hintStyle: TextStyle(color: Colors.white60),
+                        ),
+                        dropdownColor: const Color(0xFF1D1E33),
+                        style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                        items: _leaveTypes.map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedLeaveType = value);
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+
+                    // Date Selection
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionLabel('Start Date'),
+                              _buildGlassContainer(
+                                onTap: () => _selectDate(context, true),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _startDate == null
+                                          ? 'Select date'
+                                          : DateFormat('dd MMM yyyy').format(_startDate!),
+                                      style: TextStyle(
+                                        color: _startDate == null
+                                            ? Colors.white60
+                                            : Colors.white,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.calendar_today_rounded,
+                                      color: Color(0xFF00D9FF),
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionLabel('End Date'),
+                              _buildGlassContainer(
+                                onTap: () => _selectDate(context, false),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _endDate == null
+                                          ? 'Select date'
+                                          : DateFormat('dd MMM yyyy').format(_endDate!),
+                                      style: TextStyle(
+                                        color: _endDate == null
+                                            ? Colors.white60
+                                            : Colors.white,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.calendar_today_rounded,
+                                      color: Color(0xFF00D9FF),
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+
+                    // Reason
+                    _buildSectionLabel('Reason for Leave'),
+                    _buildGlassContainer(
+                      child: TextFormField(
+                        controller: _reasonController,
+                        maxLines: 4,
+                        style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Describe your reason for leave...',
+                          hintStyle: TextStyle(color: Colors.white60),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please provide a reason';
+                          }
+                          if (value.trim().length < 10) {
+                            return 'Reason must be at least 10 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+
+                    // Advisor Selection
+                    _buildSectionLabel('Select Advisor (Optional)'),
+                    _isLoadingAdvisors
+                        ? _buildGlassContainer(
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF00D9FF),
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          )
+                        : _buildGlassContainer(
+                            onTap: () => _showAdvisorSelector(),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedAdvisorIds.isEmpty
+                                        ? 'Tap to select advisor(s)'
+                                        : '${_selectedAdvisorIds.length} advisor(s) selected',
+                                    style: TextStyle(
+                                      color: _selectedAdvisorIds.isEmpty
+                                          ? Colors.white60
+                                          : Colors.white,
+                                      fontSize: 13.sp,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  _selectedAdvisorIds.isEmpty
+                                      ? Icons.person_add_outlined
+                                      : Icons.check_circle,
+                                  color: _selectedAdvisorIds.isEmpty
+                                      ? const Color(0xFF00D9FF)
+                                      : const Color(0xFF4CAF50),
+                                  size: 22,
+                                ),
+                              ],
+                            ),
+                          ),
+                    SizedBox(height: 2.h),
+
+                    // Attachment
+                    _buildSectionLabel('Supporting Document (Optional)'),
+                    _buildGlassContainer(
+                      onTap: _pickImage,
+                      child: _attachedImage == null
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.attach_file_rounded,
+                                  color: Color(0xFF00D9FF),
+                                ),
+                                SizedBox(width: 2.w),
+                                Text(
+                                  'Tap to attach document',
+                                  style: TextStyle(
+                                    color: const Color(0xFF00D9FF),
+                                    fontSize: 13.sp,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xFF4CAF50),
+                                    ),
+                                    SizedBox(width: 2.w),
+                                    Text(
+                                      'Document attached',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() => _attachedImage = null);
+                                  },
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                    SizedBox(height: 4.h),
+
+                    // Submit Button
+                    _buildGlassButton(
+                      label: _isSubmitting ? 'Submitting...' : 'Submit Request',
+                      onTap: _isSubmitting ? null : _submitRequest,
+                      color: const Color(0xFF00D9FF),
+                    ),
+                    SizedBox(height: 2.h),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 1.h),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w600,
+          color: Colors.white.withOpacity(0.8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassContainer({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(4.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D1E33).withOpacity(0.7),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildGlassButton({
+    required String label,
+    required VoidCallback? onTap,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 2.h),
+        decoration: BoxDecoration(
+          color: color.withOpacity(onTap == null ? 0.3 : 0.8),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: onTap == null
+              ? []
+              : [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
+

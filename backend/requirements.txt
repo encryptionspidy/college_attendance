@@ -10,3 +10,5 @@ pydantic==2.9.2
 python-multipart==0.0.6
 # Security: Rate limiting
 slowapi==0.1.9
+# Environment configuration
+python-dotenv==1.0.0

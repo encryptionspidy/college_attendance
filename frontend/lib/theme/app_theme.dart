@@ -438,41 +438,41 @@ class AppTheme {
     ),
     textTheme: _buildTextTheme(isLight: false),
     inputDecorationTheme: InputDecorationTheme(
-      fillColor: surfaceDark,
       filled: true,
+      fillColor: Colors.white.withOpacity(0.06), // Frosted glass effect
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: dividerDark, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.0),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: dividerDark, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: primaryDark, width: 2.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.35), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12.0),
         borderSide: const BorderSide(color: errorDark, width: 1.0),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: errorDark, width: 2.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: errorDark, width: 1.5),
       ),
       labelStyle: GoogleFonts.inter(
-        color: textSecondaryDark,
+        color: Colors.white.withOpacity(0.8),
         fontSize: 14,
         fontWeight: FontWeight.w400,
       ),
       hintStyle: GoogleFonts.inter(
-        color: textDisabledDark,
+        color: Colors.white.withOpacity(0.6),
         fontSize: 14,
         fontWeight: FontWeight.w400,
       ),
-      prefixIconColor: textSecondaryDark,
-      suffixIconColor: textSecondaryDark,
+      prefixIconColor: Colors.white.withOpacity(0.7),
+      suffixIconColor: Colors.white.withOpacity(0.7),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
@@ -712,4 +712,146 @@ class AppTheme {
       ),
     );
   }
+
+
+  // ============================================================================
+  // LIQUID GLASS DESIGN SYSTEM PARAMETERS
+  // Added: October 29, 2025
+  // ============================================================================
+  
+  // Glass Color Palette - Sophisticated bluish tones
+  static const Color glassBlue = Color(0xFF4A90E2);
+  static const Color glassBlueLight = Color(0xFF7FB3F5);
+  static const Color glassBlueDark = Color(0xFF2E5C8A);
+  static const Color glassAccent = Color(0xFF00D4FF);
+  static const Color glassShimmer = Color(0xFFFFFFFF);
+  static const Color glassBackground = Color(0xFFF5F7FA);
+  static const Color glassBackgroundDark = Color(0xFF0A0E27);
+  
+  // Glass Effect Parameters
+  static const double glassBlur = 10.0;
+  static const double glassBlurLight = 8.0;
+  static const double glassBlurHeavy = 15.0;
+  static const double glassOpacity = 0.15;
+  static const double glassOpacityLight = 0.10;
+  static const double glassOpacityHeavy = 0.20;
+  static const double glassElevation = 8.0;
+  static const double glassElevationLight = 4.0;
+  static const double glassElevationHeavy = 12.0;
+  static const double glassBorderWidth = 1.5;
+  static const double glassBorderOpacity = 0.2;
+  
+  // Border Radius Standards
+  static const double radiusSmall = 8.0;
+  static const double radiusMedium = 12.0;
+  static const double radiusLarge = 16.0;
+  static const double radiusXLarge = 24.0;
+  static const double radiusFull = 999.0;
+  
+  // Animation Durations (in milliseconds)
+  static const Duration fastAnimation = Duration(milliseconds: 150);
+  static const Duration normalAnimation = Duration(milliseconds: 300);
+  static const Duration slowAnimation = Duration(milliseconds: 500);
+  static const Duration verySlowAnimation = Duration(milliseconds: 800);
+  
+  // Animation Curves
+  static const Curve smoothCurve = Curves.easeInOutCubic;
+  static const Curve bounceCurve = Curves.elasticOut;
+  static const Curve snapCurve = Curves.easeOut;
+  static const Curve gentleCurve = Curves.easeInOut;
+  
+  // Spacing System (8dp base unit)
+  static const double spaceXS = 4.0;
+  static const double spaceSM = 8.0;
+  static const double spaceMD = 16.0;
+  static const double spaceLG = 24.0;
+  static const double spaceXL = 32.0;
+  static const double space2XL = 48.0;
+  static const double space3XL = 64.0;
+  
+  // Typography Scale (with liquid glass aesthetic)
+  static const double fontSizeXS = 10.0;
+  static const double fontSizeSM = 12.0;
+  static const double fontSizeMD = 14.0;
+  static const double fontSizeLG = 16.0;
+  static const double fontSizeXL = 20.0;
+  static const double fontSize2XL = 24.0;
+  static const double fontSize3XL = 32.0;
+  static const double fontSize4XL = 48.0;
+  
+  // Icon Sizes
+  static const double iconSizeXS = 16.0;
+  static const double iconSizeSM = 20.0;
+  static const double iconSizeMD = 24.0;
+  static const double iconSizeLG = 32.0;
+  static const double iconSizeXL = 48.0;
+  
+  // Shadow Definitions for Glass Components
+  static final List<BoxShadow> glassLightShadow = [
+    BoxShadow(
+      color: Colors.grey.withOpacity(0.2),
+      blurRadius: glassElevation,
+      offset: const Offset(0, 4),
+    ),
+  ];
+  
+  static final List<BoxShadow> glassDarkShadow = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.3),
+      blurRadius: glassElevation,
+      offset: const Offset(0, 4),
+    ),
+  ];
+  
+  // Gradient Definitions
+  static const LinearGradient glassGradientLight = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0x26FFFFFF),
+      Color(0x1AFFFFFF),
+    ],
+  );
+  
+  static const LinearGradient glassGradientDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0x26FFFFFF),
+      Color(0x0DFFFFFF),
+    ],
+  );
+  
+  static const LinearGradient glassAccentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF4A90E2),
+      Color(0xFF00D4FF),
+    ],
+  );
+  
+  // Button Heights
+  static const double buttonHeightSmall = 36.0;
+  static const double buttonHeightMedium = 48.0;
+  static const double buttonHeightLarge = 56.0;
+  
+  // Input Heights
+  static const double inputHeightSmall = 40.0;
+  static const double inputHeightMedium = 48.0;
+  static const double inputHeightLarge = 56.0;
+  
+  // Z-Index Layers (for stack ordering)
+  static const int zIndexBackground = 0;
+  static const int zIndexContent = 10;
+  static const int zIndexOverlay = 20;
+  static const int zIndexModal = 30;
+  static const int zIndexPopup = 40;
+  static const int zIndexTooltip = 50;
+  
+  // Breakpoints for Responsive Design
+  static const double breakpointMobile = 480.0;
+  static const double breakpointTablet = 768.0;
+  static const double breakpointDesktop = 1024.0;
+  static const double breakpointWide = 1440.0;
 }

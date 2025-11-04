@@ -219,6 +219,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
       _isRefreshing = false;
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Profile data refreshed successfully'),

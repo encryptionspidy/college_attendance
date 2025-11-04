@@ -156,8 +156,8 @@ def require_student_data_access(current_user: User = Depends(get_current_user)) 
 
 @router.post("/token", response_model=schemas.Token)
 @limiter.limit("5/minute")
-def login_for_access_token(request: Request, form_data: schemas.UserLogin, db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
+def login_for_access_token(request: Request, credentials: schemas.UserLogin, db: Session = Depends(get_db)):
+    user = authenticate_user(db, credentials.username, credentials.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

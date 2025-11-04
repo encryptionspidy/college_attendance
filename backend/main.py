@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+
+# Load environment variables FIRST, before any other imports
+load_dotenv()
+
 from fastapi import FastAPI, Depends, Request, UploadFile, File, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,13 +35,7 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 Starting College Attendance Marker API...")
-    try:
-        from migrate_db import migrate_database
-        migrate_database()
-        logger.info("✅ Database migration completed")
-    except Exception as e:
-        logger.error(f"❌ Startup migration failed: {e}", exc_info=True)
-    
+
     # Ensure tables exist
     Base.metadata.create_all(bind=engine)
     logger.info("✅ Database tables verified")
@@ -112,7 +111,7 @@ if os.getenv("ENVIRONMENT") == "production":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 
 # Public router: authentication (no global auth dependency)
-app.include_router(auth.router, tags=["authentication"])
+app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 
 # Protected routers: require authenticated user by default
 app.include_router(users_router, dependencies=[Depends(get_current_user)])

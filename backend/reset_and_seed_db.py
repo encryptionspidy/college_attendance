@@ -51,49 +51,50 @@ async def reset_and_seed_database():
         else:
             print("Admin user already present.")
 
-        # 5. Create 60 new Student users
+        # 5. Create 60 new Student users (23CS001 to 23CS060)
         print("Creating 60 new Student users...")
-        hashed_password = get_password_hash("12345678")
+        student_password = get_password_hash("1234")
         new_students = []
         for i in range(1, 61):
             username = f"23CS{i:03d}"
             new_students.append(User(
                 username=username,
-                hashed_password=hashed_password,
+                hashed_password=student_password,
                 role='student',
-                name=f"Student {i:03d}",
+                name=f"Student {username}",
                 roll_no=username,
-                semester=1,
-                year=1,
-                dob=date(2000, 1, 1),
-                gender='Male',
-                cgpa=0.0,
-                course='B.Tech',
-                section='A',
+                semester=6,
+                year=3,
+                dob=date(2005, 1, 1),
+                gender='Male' if i % 2 == 0 else 'Female',
+                cgpa=7.5 + (i % 20) * 0.1,
+                course='B.Tech Computer Science',
+                section='A' if i <= 30 else 'B',
                 profile_picture_url=''
             ))
         db.add_all(new_students)
         print("Done.")
 
-        # 6. Create 5 new Advisor users
-        print("Creating 5 new Advisor users...")
+        # 6. Create 4 new Advisor users (advisor1 to advisor4)
+        print("Creating 4 new Advisor users...")
+        advisor_password = get_password_hash("1234")
         new_advisors = []
-        for i in range(1, 6):
+        for i in range(1, 5):
             new_advisors.append(User(
                 username=f"advisor{i}",
-                hashed_password=hashed_password,
+                hashed_password=advisor_password,
                 role='advisor',
-                name=f"Advisor {i}",
+                name=f"Dr. Advisor {i}",
                 profile_picture_url=''
             ))
         db.add_all(new_advisors)
         print("Done.")
 
-        # 7. Create 1 new Attendance Incharge user
+        # 7. Create 1 new Attendance Incharge user (attendance_i)
         print("Creating 1 new Attendance Incharge user...")
         attendance_incharge = User(
-            username="attendance_incharge",
-            hashed_password=hashed_password,
+            username="attendance_i",
+            hashed_password=get_password_hash("1234"),
             role='attendance_incharge',
             name="Attendance Incharge",
             profile_picture_url=''
@@ -105,10 +106,10 @@ async def reset_and_seed_database():
         print("\nDatabase has been successfully reset and seeded with new data.")
         print("\n⚠️  WARNING: The following credentials are for DEVELOPMENT use only!")
         print("\nLogin credentials:")
-        print("  Admin:           admin / admin123")
-        print("  Advisors:        advisor1..advisor5 / 12345678")
-        print("  Attendance Incharge: attendance_incharge / 12345678")
-        print("  Students:        23CS001..23CS060 / 12345678")
+        print("  Admin:              admin / admin123")
+        print("  Advisors:           advisor1, advisor2, advisor3, advisor4 / 1234")
+        print("  Attendance Incharge: attendance_i / 1234")
+        print("  Students:           23CS001 to 23CS060 / 1234")
 
     except Exception as e:
         print(f"An error occurred: {e}")

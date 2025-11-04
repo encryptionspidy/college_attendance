@@ -88,6 +88,20 @@ env.bak/
 venv.bak/
 venv311/
 
+# Temporary and progress files
+*_SUMMARY.md
+*_PROGRESS.md
+DEVELOPMENT_PROGRESS.md
+PROJECT_STATUS.md
+flutter_output.txt
+*.sh.bak
+fix_*.sh
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -138,6 +152,67 @@ Thumbs.db
 .pub-cache/
 .pub/
 build/
+*.g.dart
+*.freezed.dart
+*.iconfig.dart
+
+# Flutter build outputs
+**/build/
+flutter_*.log
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android specific
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
+
+# iOS/XCode specific
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Web specific
+**/web/assets/
+
+# Static files that might be generated
+**/static/uploads/*
+**/static/leave_requests/*
+!**/static/uploads/.gitkeep
+!**/static/leave_requests/.gitkeep
+.pub-cache/
+.pub/
+build/
 flutter_*.log
 
 # Web specific
@@ -152,13 +227,28 @@ flutter_*.log
 *_backup.*
 comprehensive_*.sh
 final_test_script.sh
+
+# Temporary documentation files (keep only README.md and DEVELOPMENT_PROGRESS.md)
 DEBUG_*.md
 FEATURE_*.md
 FINAL_*.md
 PHASE_*.md
-OPTIMIZATION_GUIDE.md
-frontend/ANALYZER_CLEANUP_SUMMARY.md
+OPTIMIZATION_*.md
+EXECUTIVE_*.md
+IMMEDIATE_*.md
+IMPLEMENTATION_*.md
+INDEX.md
+LIQUID_*.md
+NOTES.md
+PROJECT_STATUS_*.md
+QUICK_*.md
+REFACTOR_*.md
+STATUS_*.md
+WORK_*.md
+WORK_*.txt
+*_SUMMARY.md
+*_REPORT.md
+*_GUIDE.md
+*_GUIDES/
 bug_fix_ai_promp.txt
-BUG_FIXES_APPLIED.md
-PRODUCTION_*.md
-WORK_COMPLETED_SUMMARY.txt
+frontend/ANALYZER_CLEANUP_SUMMARY.md

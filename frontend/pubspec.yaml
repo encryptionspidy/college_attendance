@@ -36,6 +36,7 @@ dependencies:
   provider: ^6.1.5+1
   share_plus: ^12.0.0
   url_launcher: ^6.3.2
+  intl: ^0.19.0
 
 dependency_overrides:
   # Force url_launcher_android to a v2-embedding compatible version
